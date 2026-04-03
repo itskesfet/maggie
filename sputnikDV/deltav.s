@@ -9,7 +9,8 @@
 ;        
 ;        
 ;        Architecture:          x86 - 64 (Linux)
-;        Assembler:             NASM
+;        Assembler:             NASM & GCC 
+;								(Comment out as needed _start/main )
 ;        Linker:                ld
 ;        Libs:                  libm (Maths Library)
 ;        Build Instructions:    Check /sputnikDV/build.sh
@@ -33,20 +34,52 @@ section .data
 	e_exaust_v	db "EXHAUST VELOCITY", 		10
 	e_exaust_v_len  equ $ - e_exaust_v
 
+	opt1 		db "OPT 1. Orbit attainment feasibility?", 	10
+	opt1_len 	equ $ - opt1
+	opt2 		db "OPT 2. Required fuel mass?", 		10
+	opt2_len 	equ $ - opt2
+	opt3 		db "OPT 3. Engine efficiency level?", 		10
+	opt3_len 	equ $ - opt3
+	opt4 		db "OPT 4. Maximum mission range?", 		10
+	opt4_len 	equ $ - opt4
+
+	;OPT`s
+	
+	opt1_1		dq "Required Orbital Velocity:	",		10
+	opt1_1_len	equ $ - opt1_1
+	opt1_1_1	db "Not Feasible",				10
+	opt1_1_1_len	equ $ - opt1_1_1
+	opt1_1_2	db "Feasible With Margine:	",		10
+	opt1_1_2_len	equ $ - opt1_1_2
+
+
 section .bss
-	;velocity 	resq 1
+	input_buf   	resb   32
+	del_velocity 	resq   1
+	
 	init_m   	resq   1
 	final_m  	resq   1
 	delta_v  	resq   1
 	eff_exhaust_v 	resq   1
 	spec_impulse    resq   1
 
+	;usr opt
+	disp_options 	resq   1
+	
+	;opt1
+	required_dv	resq   1
+	margine		resq   1
 section .text 
-    	
-	global _start
 
-_start:
-	; print_titel
+global main
+;global _start
+
+main:
+;_start:
+
+ ;init() 	equate del_v formula.
+ init:
+	;print_titel
 	mov rax,  1
 	mov rdi,  1
 	mov rsi, welcom_msg
@@ -93,14 +126,14 @@ _start:
 	mov rsi,  eff_exhaust_v
 	mov rdx,  8
 	syscall
-
-	;//TODO :g Is Pointless ATP 
-        
+	
+	
+	;TODO rem this bloack
 	;calc Isp
-	mov rax, [eff_exhaust_v]
-	mov rbx, g
-	imul rax, rbx 
-	mov spec_inpulse , rax
+	;mov rax, [eff_exhaust_v]
+	;mov rbx, g
+	;imul rax, rbx 
+	;mov spec_inpulse , rax
 	
 	;calc ln of mi/mf
 	movsd xmm0, [init_m]
@@ -109,10 +142,116 @@ _start:
 	
 	extern log
 	call log	; works with xmm0
+	
+	;TODO rem this
+	;mulsd xmm0, [g]
+	;TODO fixed
+	mulsd xmm0, [eff_exhaust_v]
+	movsd   [del_velocity],	xmm0
+options:
 
-	mulsd xmm0, [g]
-	mulsd xmm0, [spec_impulse]
+    	mov rax, 1          
+    	mov rdi, 1          
+    	mov rsi, opt1
+    	mov rdx, opt1_len
+    	syscall
 
+    	mov rax, 1
+    	mov rdi, 1
+    	mov rsi, opt2
+    	mov rdx, opt2_len
+    	syscall
+
+    	mov rax, 1
+    	mov rdi, 1
+    	mov rsi, opt3
+    	mov rdx, opt3_len
+    	syscall
+
+    	mov rax, 1
+    	mov rdi, 1
+    	mov rsi, opt4
+    	mov rdx, opt4_len
+    	syscall
+
+	;read opt (either bw 1-4)
+	mov rax,  0
+	mov rdi,  0
+	mov rsi,  disp_options 	
+	mov rdx,  8
+	syscall
+
+	;TODO branch based on input
+	
+
+
+f_opt1:
+	;OPT 1. Orbit attainment feasibility?
+	mov rax,  1
+	mov rdi,  1
+	mov rsi,  opt1_1
+	mov rdx,  opt1_1_len
+	syscall
+
+;	mov rax, 0
+;	mov rdi, 0
+;	mov rsi, input_buf
+;	mov rdx, 32
+;	syscall
+
+;	mov rdi, input_buf
+;	xor rsi, rsi
+
+;	sub rsp, 8
+;	call strtod
+;	add rsp, 8
+
+;	movsd [required_dv], xmm0
+
+	movsd xmm0, [del_velocity]
+	movsd xmm1, [required_dv]
+	ucomisd xmm0, xmm1
+	JAE f_opt1_ORBIT_FEASIBIL
+
+	mov rax,  1
+	mov rdi,  1
+	mov rsi,  opt1_1_1
+	mov rdx,  opt1_1_1_len
+	syscall
+	
+	JMP options
+	
+	
+
+f_opt1_ORBIT_FEASIBIL:
+	mov rax,  1
+	mov rdi,  1
+	mov rsi,  opt1_1_2
+	mov rdx,  opt1_1_2_len
+	syscall
+	
+	mov rax,  1
+	mov rdi,  1
+	mov rsi,  opt1_1
+	mov rdx,  opt1_1_len
+	syscall
+		
+	movsd xmm0, [del_velocity]
+	movsd xmm1, [required_dv]
+	subsd xmm0, xmm1
+	
+	movsd [margine], xmm0
+	
+	;TODO print margin 
+	;mov rax,  1
+	;mov rdi,  1
+	;mov rsi,  margine
+	;mov rdx,  8
+	;syscall
+
+	
+
+ exit:	
 	; exit
 	mov rax, 60
     	xor rdi, rdi
