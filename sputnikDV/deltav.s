@@ -22,6 +22,7 @@
 
 section .data
 	g	  dq 9.81
+	one 	dq 1.0
 	welcom_msg 	db "DELTA V - LIB ",  10
 	wel_len    	equ $ - welcom_msg
 	
@@ -45,7 +46,7 @@ section .data
 
 	;OPT`s
 	
-	opt1_1		dq "Required Orbital Velocity:	",		10
+	opt1_1		db "Required Orbital Velocity:	",		10
 	opt1_1_len	equ $ - opt1_1
 	opt1_1_1	db "Not Feasible",				10
 	opt1_1_1_len	equ $ - opt1_1_1
@@ -197,7 +198,28 @@ options:
 	mov rdx,  8
 	syscall
 
-	;TODO branch based on input
+	mov rax, 0
+	mov rdi, 0
+	mov rsi, input_buf
+	mov rdx, 2
+	syscall
+
+	movzx rax, byte [input_buf]
+	sub rax, '0'
+
+	cmp rax, 1
+	je f_opt1
+
+	cmp rax, 2
+	je f_opt2
+
+	;cmp rax, 3
+	;je f_opt3
+
+	;cmp rax, 4
+	;je f_opt4
+
+	jmp options
 	
 
 
@@ -253,6 +275,7 @@ f_opt1_ORBIT_FEASIBIL:
 	syscall
 		
 	movsd xmm0, [del_velocity]
+	mov qword [required_dv], 9500.0 	;prevent garbage value
 	movsd xmm1, [required_dv]
 	subsd xmm0, xmm1
 	
@@ -313,6 +336,6 @@ wait_key:
     mov rax, 0
     mov rdi, 0
     mov rsi, key_buf
-    mov rdx, 1      
-	syscall
+    mov rdx, 2     
+    syscall
     ret
