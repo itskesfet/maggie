@@ -52,6 +52,9 @@ section .data
 	opt1_1_2	db "Feasible With Margine:	",		10
 	opt1_1_2_len	equ $ - opt1_1_2
 
+	opt2_msg	db "OPT 2: Fuel required calculation", 10
+	opt2_msg_len 	equ $ - opt2_msg
+
 
 section .bss
 	input_buf   	resb   32
@@ -69,9 +72,14 @@ section .bss
 	;opt1
 	required_dv	resq   1
 	margine		resq   1
+
+	;opt2
+	fuel_required	resq   1
+	
 section .text 
 
 global main
+extern exp
 ;global _start
 
 main:
@@ -249,9 +257,37 @@ f_opt1_ORBIT_FEASIBIL:
 	;mov rdx,  8
 	;syscall
 
+
+f_opt2:
+   	 ; Print header
+   	 mov rax, 1
+   	 mov rdi, 1
+   	 mov rsi, opt2_msg
+   	 mov rdx, opt2_msg_len
+   	 syscall
 	
 
- exit:	
+ 	 movsd xmm0, [required_dv]
+ 	 movsd xmm1, [eff_exhaust_v]
+
+ 	 divsd xmm0, xmm1
+ 	 xorpd xmm2, xmm2
+ 	 subsd xmm2, xmm0   ; 0 - (dv/ve)   
+
+
+	 movapd xmm0, xmm2
+    	 sub 	rsp, 8
+    	 call 	exp  		; exp xmm0               	 
+	 add 	rsp, 8		; xmm0 e^(-dv/ve)
+	 movsd  xmm1, [one]
+   	 subsd  xmm1, xmm0	
+   	 movsd  xmm0, [init_m]
+   	 mulsd  xmm0, xmm1
+    	 movsd  [fuel_required], xmm0
+    	 jmp 	options
+
+
+pgm_exit:	
 	; exit
 	mov rax, 60
     	xor rdi, rdi
