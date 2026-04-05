@@ -56,6 +56,14 @@ section .data
 	opt2_msg_len 	equ $ - opt2_msg
 
 
+
+	;terminal clear
+	clear_seq db 27, "[2J", 27, "[H"
+	clear_len equ $ - clear_seq
+
+	;wait key
+	key_buf resb 1
+
 section .bss
 	input_buf   	resb   32
 	del_velocity 	resq   1
@@ -293,3 +301,18 @@ pgm_exit:
     	xor rdi, rdi
     	syscall
 
+clear_screen:
+    mov rax, 1  
+    mov rdi, 1 
+    mov rsi, clear_seq
+    mov rdx, clear_len
+    syscall
+    ret
+
+wait_key:
+    mov rax, 0
+    mov rdi, 0
+    mov rsi, key_buf
+    mov rdx, 1      
+	syscall
+    ret
