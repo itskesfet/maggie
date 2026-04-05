@@ -257,7 +257,7 @@ namespace maggie{
 // size() , capacity() , empty() , at() , [] ,  ...
 
 
-/*
+
 	template <typename T>
 	const T& Maggie<T>::at(size_t pos) const{
 		if(pos >= size_) {
@@ -302,7 +302,7 @@ namespace maggie{
 		}
 		return data_[index]; 
 	};
-*/
+
 };
 
 #endif
